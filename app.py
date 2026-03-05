@@ -8,8 +8,30 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 st.title("GenAI Regulatory Risk Analyzer")
 
 # Load data
-df = pd.read_csv("analyzed_data.csv")
+import pandas as pd
+import numpy as np
+from sklearn.ensemble import IsolationForest
 
+# Generate synthetic data
+np.random.seed(42)
+
+data = {
+    "loan_id": range(1, 501),
+    "loan_amount": np.random.randint(50000, 500000, 500),
+    "applicant_income": np.random.randint(20000, 200000, 500),
+    "approval_status": np.random.choice(["Approved", "Rejected"], 500),
+    "region": np.random.choice(["North", "South", "East", "West"], 500)
+}
+
+df = pd.DataFrame(data)
+
+# Run anomaly detection
+features = df[["loan_amount", "applicant_income"]]
+
+model = IsolationForest(contamination=0.05, random_state=42)
+df["anomaly"] = model.fit_predict(features)
+
+df["risk_flag"] = df["anomaly"].apply(lambda x: "High Risk" if x == -1 else "Normal")
 st.subheader("Dataset Preview")
 st.write(df.head())
 
